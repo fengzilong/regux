@@ -6,6 +6,7 @@
 <body>
 	<script type="text/javascript" src="./regular.js"></script>
 	<script type="text/javascript" src="../dist/regux.js"></script>
+	<script type="text/javascript" src="../logger.js"></script>
 	<script type="text/javascript">
 		Regular.use( regux );
 
@@ -42,15 +43,7 @@
 						store.dispatch( { type: 'SUBTRACT', payload: num } );
 					}
 				},
-			},
-			config() {
-				console.log( 'config' );
-				console.log( this );
-				this.data.ooo = 'ooo';
-				setTimeout(() => {
-					console.log( this.$get( 'count' ) );
-				}, 5000);
-			},
+			}
 		});
 
 		App.component( 'Button', Button );
@@ -71,7 +64,7 @@
 		const store = new regux.Store({
 			state,
 			mutations,
-			plugins: []
+			plugins: [ logger() ]
 		});
 
 		// inject store into child components on top level

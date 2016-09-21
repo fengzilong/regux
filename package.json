@@ -5,7 +5,7 @@
   "main": "dist/regux.js",
   "scripts": {
     "dev": "onchange \"src\" -i -v -- npm run build",
-    "build": "bubleup ./src/index.js -d dist --format umd --name regux"
+    "build": "bubleup ./src/index.js -d dist --format umd --name regux & bubleup ./src/logger.js -d ./ --format umd --name logger"
   },
   "repository": {
     "type": "git",

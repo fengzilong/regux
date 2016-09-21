@@ -46,7 +46,18 @@ var handleComputed = (function(){
 	}
 })();
 
+// Credits: fcomb/redux-logger
+
+function repeat (str, times) {
+	return (new Array(times + 1)).join(str);
+}
+
+function pad (num, maxLength) {
+	return repeat('0', maxLength - num.toString().length) + num;
+}
+
 var Store = function Store( ref ) {
+	var this$1 = this;
 	if ( ref === void 0 ) ref = {};
 	var state = ref.state; if ( state === void 0 ) state = {};
 	var mutations = ref.mutations; if ( mutations === void 0 ) mutations = {};
@@ -56,11 +67,17 @@ var Store = function Store( ref ) {
 	this._mutations = mutations;
 	this._plugins = plugins;
 	this._autoUpdate = autoUpdate;
+	this._subscribers = [];
 
 	Object.defineProperty( this, 'state', {
 		get: function () { return state; },
 		set: function () { throw new Error( 'cannot set state directly' ) }
 	} );
+
+	for( var i = 0, len = plugins.length; i < len; i++ ) {
+		var plugin = plugins[ i ];
+		plugin( this$1 );
+	}
 };
 Store.prototype.watch = function watch ( getter, cb, options ) {
 
@@ -72,13 +89,13 @@ Store.prototype.dispatch = function dispatch ( mutation ) {
 		return;
 	}
 
-	var mutationName = mutation.type;
+	var mutationType = mutation.type;
 	var payload = mutation.payload;
-	var mutationFn = this._mutations[ mutationName ];
+	var mutate = this._mutations[ mutationType ];
 
-	if( typeof mutationFn === 'function' ) {
-		mutationFn( this.state, mutation );
-		console.log( 'mutated', this.state );
+	if( typeof mutate === 'function' ) {
+		mutate( this.state, mutation );
+		this._applySubscribers( mutation, this.state );
 		if( this._autoUpdate ) {
 			this._host.$update();
 		}
@@ -89,13 +106,26 @@ Store.prototype.dispatch = function dispatch ( mutation ) {
 Store.prototype.host = function host ( target ) {
 	this._host = target;
 };
+Store.prototype._applySubscribers = function _applySubscribers ( mutation, state ) {
+	var subscribers = this._subscribers;
+
+	if( subscribers.length === 0 ) {
+		return;
+	}
+
+	// TODO: shall deepClone state?
+
+	for ( var i = 0, len = subscribers.length; i < len; i++ ) {
+		var subscriber = subscribers[ i ];
+		subscriber( mutation, state );
+	}
+};
 Store.prototype.subscribe = function subscribe ( fn ) {
 	if( typeof fn !== 'function' ) {
 		return;
 	}
 
-	this._subscribeFns = this._subscribeFns || [];
-	this._subscribeFns.push( fn );
+	this._subscribers.push( fn );
 
 	return this;
 };
