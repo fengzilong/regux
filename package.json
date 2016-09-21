@@ -2,9 +2,10 @@
   "name": "regux",
   "version": "0.0.0",
   "description": "redux-inspired application architecture for regular",
-  "main": "index.js",
+  "main": "dist/regux.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "onchange \"src\" -i -v -- npm run build",
+    "build": "bubleup ./src/index.js -d dist --format umd --name regux"
   },
   "repository": {
     "type": "git",

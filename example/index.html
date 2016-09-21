@@ -1,0 +1,81 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>regux demo</title>
+</head>
+<body>
+	<script type="text/javascript" src="./regular.js"></script>
+	<script type="text/javascript" src="../dist/regux.js"></script>
+	<script type="text/javascript">
+		Regular.use( regux );
+
+		const Button = Regular.extend({
+			template: `
+				<button on-click="{ this.onClick() }">{#inc this.$body}</button>
+			`,
+			config() {
+			},
+			onClick() {
+				this.$emit( 'click' );
+			}
+		});
+
+		const App = Regular.extend({
+			template: `
+				<div>
+					{ count }
+					<Button on-click="{ this.onAdd( 10 ) }">Add</Button>
+					<Button on-click="{ this.onSubtract( 5 ) }">Subtract</Button>
+				</div>
+			`,
+			regux: {
+				getters: {
+					count: function( state ) {
+						return state.c;
+					}
+				},
+				actions: {
+					onAdd( store, num ) {
+						store.dispatch( { type: 'ADD', payload: num } );
+					},
+					onSubtract( store, num ) {
+						store.dispatch( { type: 'SUBTRACT', payload: num } );
+					}
+				},
+			},
+			config() {
+				console.log( 'config' );
+				console.log( this );
+				this.data.ooo = 'ooo';
+				setTimeout(() => {
+					console.log( this.$get( 'count' ) );
+				}, 5000);
+			},
+		});
+
+		App.component( 'Button', Button );
+
+		const state = {
+			c: 0
+		};
+
+		const mutations = {
+			ADD( state, mutation ) {
+				state.c = state.c + mutation.payload;
+			},
+			SUBTRACT( state, mutation ) {
+				state.c = state.c - mutation.payload;
+			}
+		};
+
+		const store = new regux.Store({
+			state,
+			mutations,
+			plugins: []
+		});
+
+		// inject store into child components on top level
+		new App( { store: store } ).$inject( document.body );
+	</script>
+</body>
+</html>
