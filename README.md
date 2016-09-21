@@ -1,2 +1,5 @@
 # regux
-regular based, inspired by vuex
+
+> redux-inspired application architecture for regular
+
+highly inspired by redux and vuex

@@ -1,0 +1,26 @@
+{
+  "name": "regux",
+  "version": "0.0.0",
+  "description": "redux-inspired application architecture for regular",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fengzilong/regux.git"
+  },
+  "keywords": [
+    "regular",
+    "redux",
+    "flux",
+    "data",
+    "flow"
+  ],
+  "author": "fengzilong",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fengzilong/regux/issues"
+  },
+  "homepage": "https://github.com/fengzilong/regux#readme"
+}
