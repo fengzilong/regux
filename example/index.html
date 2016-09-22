@@ -10,29 +10,18 @@
 	<script type="text/javascript">
 		Regular.use( regux );
 
-		const Button = Regular.extend({
-			template: `
-				<button on-click="{ this.onClick() }">{#inc this.$body}</button>
-			`,
-			config() {
-			},
-			onClick() {
-				this.$emit( 'click' );
-			}
-		});
-
 		const App = Regular.extend({
 			template: `
 				<div>
 					{ count }
-					<Button on-click="{ this.onAdd( 10 ) }">Add</Button>
-					<Button on-click="{ this.onSubtract( 5 ) }">Subtract</Button>
+					<button on-click="{ this.onAdd( 10 ) }">+</button>
+					<button on-click="{ this.onSubtract( 5 ) }">-</button>
 				</div>
 			`,
 			regux: {
 				getters: {
 					count: function( state ) {
-						return state.xxx.x;
+						return state.foo.bar;
 					}
 				},
 				actions: {
@@ -45,8 +34,6 @@
 				},
 			}
 		});
-
-		App.component( 'Button', Button );
 
 		const state = {
 			c: 0
@@ -61,23 +48,25 @@
 			}
 		};
 
+		const foo = {
+			state: { bar: 10 },
+			mutations: {
+				ADD2( state, mutation ) {
+					state.bar = state.bar + mutation.payload;
+				},
+				SUBTRACT2( state, mutation ) {
+					state.bar = state.bar - mutation.payload;
+				}
+			}
+		};
+
 		const store = new regux.Store({
 			state,
 			mutations,
 			modules: {
-				xxx: {
-					state: { x: 9 },
-					mutations: {
-						ADD2( state, mutation ) {
-							state.x = state.x + mutation.payload;
-						},
-						SUBTRACT2( state, mutation ) {
-							state.x = state.x - mutation.payload;
-						}
-					}
-				}
+				foo: foo
 			},
-			plugins: [ logger( { collapsed: false } ) ]
+			plugins: [ logger( { collapsed: true } ) ]
 		});
 
 		// inject store into child components on top level
