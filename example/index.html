@@ -32,15 +32,15 @@
 			regux: {
 				getters: {
 					count: function( state ) {
-						return state.c;
+						return state.xxx.x;
 					}
 				},
 				actions: {
 					onAdd( store, num ) {
-						store.dispatch( { type: 'ADD', payload: num } );
+						store.dispatch( { type: 'ADD2', payload: num } );
 					},
 					onSubtract( store, num ) {
-						store.dispatch( { type: 'SUBTRACT', payload: num } );
+						store.dispatch( { type: 'SUBTRACT2', payload: num } );
 					}
 				},
 			}
@@ -64,6 +64,19 @@
 		const store = new regux.Store({
 			state,
 			mutations,
+			modules: {
+				xxx: {
+					state: { x: 9 },
+					mutations: {
+						ADD2( state, mutation ) {
+							state.x = state.x + mutation.payload;
+						},
+						SUBTRACT2( state, mutation ) {
+							state.x = state.x - mutation.payload;
+						}
+					}
+				}
+			},
 			plugins: [ logger( { collapsed: false } ) ]
 		});
 
