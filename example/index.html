@@ -64,7 +64,7 @@
 		const store = new regux.Store({
 			state,
 			mutations,
-			plugins: [ logger() ]
+			plugins: [ logger( { collapsed: false } ) ]
 		});
 
 		// inject store into child components on top level

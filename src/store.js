@@ -20,6 +20,9 @@ class Store {
 	watch( getter, cb, options ) {
 
 	}
+	commit( mutation ) {
+		// TODO: same as dispatch, but will force update
+	}
 	dispatch( mutation ) {
 		// mutation -> { type: 'foo', payload: 'bar' }
 		if( !isValidMutationObject( mutation ) ) {
@@ -34,6 +37,7 @@ class Store {
 		if( typeof mutate === 'function' ) {
 			mutate( this.state, mutation );
 			this._applySubscribers( mutation, this.state );
+			// TODO: remove, use commit to force update
 			if( this._autoUpdate ) {
 				this._host.$update();
 			}

@@ -40,4 +40,9 @@ const handleComputed = (function(){
 	}
 })();
 
-export default handleComputed;
+// generate computed properties from getters
+const makeComputed = ( target, getters ) {
+	Object.assign( target.computed || {}, computed( getters ) );
+};
+
+export default makeComputed;

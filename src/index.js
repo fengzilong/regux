@@ -1,4 +1,4 @@
-import computed from './computed';
+import makeComputed from './computed';
 import Store, { isStore } from './store';
 
 const regux = Component => {
@@ -45,7 +45,7 @@ const regux = Component => {
 						return getter( store.state );
 					};
 				}
-				Object.assign( this.computed || {}, computed( getters ) );
+				makeComputed( this, getters );
 
 				keys = Object.keys( actions );
 				for ( let i = 0, len = keys.length; i < len; i++ ) {
