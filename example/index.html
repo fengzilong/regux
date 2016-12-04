@@ -70,7 +70,6 @@
 		const store = new regux.Store({
 			modules: {
 				app: app,
-				foo: foo,
 			},
 			actions: {
 				add( context, num ) {
@@ -82,12 +81,16 @@
 					context.nextTick( function() {
 					} );
 				},
-				subtract( context, num ) {
-					context.commit( 'foo/SUBTRACT2', num );
-				}
 			},
 			plugins: [ logger( { collapsed: true } ) ]
 		});
+
+		store.registerModule( 'foo', foo );
+		store.registerActions( {
+			subtract( context, num ) {
+				context.commit( 'foo/SUBTRACT2', num );
+			}
+		} )
 
 		// inject store into child components on top level
 		new App( { store: store } ).$inject( document.body );

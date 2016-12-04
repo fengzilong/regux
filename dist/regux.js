@@ -95,32 +95,15 @@ var Store = function Store( ref ) {
 		_updateTid: null,
 	} );
 
-	Object.keys( modules ).forEach( function (i) {
-		var module = modules[ i ];
-
-		// attach module state to root state
-		this$1._state[ i ] = module.state || {};
-
-		var reducers = module.reducers || {};
-		for ( var j in reducers ) {
-			reducers[ j ].key = i;
-		}
-		reducers = addNSForReducers( reducers, i );
-		// attach module reducers to root reducers
-		Object.assign( this$1._reducers, reducers );
-	} );
-
-	function addNSForReducers( reducers, ns ) {
-		var tmp = {};
-		Object.keys( reducers ).forEach( function (key) {
-			tmp[ (ns + "/" + key) ] = reducers[ key ];
-		} );
-		return tmp;
-	}
+	Object.keys( modules )
+		.forEach( function (name) { return this$1.registerModule( name, modules[ name ] ); } );
 
 	// execute plugins
 	devtoolsPlugin()( this );
-	plugins.forEach( function (plugin) { return plugin( this$1 ); } );
+	plugins.forEach( function (plugin) { return this$1.use( plugin ); } );
+};
+Store.prototype.use = function use ( plugin ) {
+	plugin( this );
 };
 Store.prototype.replaceState = function replaceState ( newState ) {
 	this._state = newState;
@@ -225,6 +208,30 @@ Store.prototype.subscribe = function subscribe ( fn ) {
 
 	this._subscribers.push( fn );
 };
+Store.prototype.registerModule = function registerModule ( name, module ) {
+		if ( name === void 0 ) name = '';
+		if ( module === void 0 ) module = {};
+
+	if ( !name ) {
+		return console.error( 'Please provide name when register module' );
+	}
+
+	// attach module state to root state
+	this._state[ name ] = module.state || {};
+
+	var reducers = module.reducers || {};
+	for ( var j in reducers ) {
+		reducers[ j ].key = name;
+	}
+	reducers = addNSForReducers( reducers, name );
+	// attach module reducers to root reducers
+	Object.assign( this._reducers, reducers );
+};
+Store.prototype.registerActions = function registerActions ( actions ) {
+		if ( actions === void 0 ) actions = {};
+
+	Object.assign( this._actions, actions );
+};
 Store.prototype._applySubscribers = function _applySubscribers ( mutation, state ) {
 	var subscribers = this._subscribers;
 
@@ -233,6 +240,14 @@ Store.prototype._applySubscribers = function _applySubscribers ( mutation, state
 		subscriber( mutation, state );
 	}
 };
+
+function addNSForReducers( reducers, ns ) {
+	var tmp = {};
+	Object.keys( reducers ).forEach( function (key) {
+		tmp[ (ns + "/" + key) ] = reducers[ key ];
+	} );
+	return tmp;
+}
 
 function isValidMutation( mutation ) {
 	return typeof mutation.type !== 'undefined';

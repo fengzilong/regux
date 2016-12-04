@@ -13,32 +13,15 @@ class Store {
 			_updateTid: null,
 		} );
 
-		Object.keys( modules ).forEach( i => {
-			const module = modules[ i ];
-
-			// attach module state to root state
-			this._state[ i ] = module.state || {};
-
-			let reducers = module.reducers || {};
-			for ( let j in reducers ) {
-				reducers[ j ].key = i;
-			}
-			reducers = addNSForReducers( reducers, i );
-			// attach module reducers to root reducers
-			Object.assign( this._reducers, reducers );
-		} );
-
-		function addNSForReducers( reducers, ns ) {
-			const tmp = {};
-			Object.keys( reducers ).forEach( key => {
-				tmp[ `${ ns }/${ key }` ] = reducers[ key ];
-			} );
-			return tmp;
-		}
+		Object.keys( modules )
+			.forEach( name => this.registerModule( name, modules[ name ] ) );
 
 		// execute plugins
 		devtoolsPlugin()( this );
-		plugins.forEach( plugin => plugin( this ) );
+		plugins.forEach( plugin => this.use( plugin ) );
+	}
+	use( plugin ) {
+		plugin( this );
 	}
 	replaceState( newState ) {
 		this._state = newState;
@@ -138,6 +121,25 @@ class Store {
 
 		this._subscribers.push( fn );
 	}
+	registerModule( name = '', module = {} ) {
+		if ( !name ) {
+			return console.error( 'Please provide name when register module' );
+		}
+
+		// attach module state to root state
+		this._state[ name ] = module.state || {};
+
+		let reducers = module.reducers || {};
+		for ( let j in reducers ) {
+			reducers[ j ].key = name;
+		}
+		reducers = addNSForReducers( reducers, name );
+		// attach module reducers to root reducers
+		Object.assign( this._reducers, reducers );
+	}
+	registerActions( actions = {} ) {
+		Object.assign( this._actions, actions );
+	}
 	_applySubscribers( mutation, state ) {
 		const subscribers = this._subscribers;
 
@@ -146,6 +148,14 @@ class Store {
 			subscriber( mutation, state );
 		}
 	}
+}
+
+function addNSForReducers( reducers, ns ) {
+	const tmp = {};
+	Object.keys( reducers ).forEach( key => {
+		tmp[ `${ ns }/${ key }` ] = reducers[ key ];
+	} );
+	return tmp;
 }
 
 function isValidMutation( mutation ) {
