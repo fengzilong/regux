@@ -10,14 +10,12 @@
 	<script type="text/javascript">
 		Regular.use( regux );
 
-		const getters = {
-			count: function( state ) {
-				return state.foo.bar;
-			}
-		};
-
 		const App = Regular.extend({
-			getters: getters,
+			getters: {
+				count: function( state ) {
+					return state.foo.bar;
+				}
+			},
 			template: `
 				<div>
 					{ count }
