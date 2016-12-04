@@ -80,15 +80,13 @@ var devtoolsPlugin = function () { return function (store) {
 var Store = function Store( ref ) {
 	var this$1 = this;
 	if ( ref === void 0 ) ref = {};
-	var state = ref.state; if ( state === void 0 ) state = {};
-	var reducers = ref.reducers; if ( reducers === void 0 ) reducers = {};
 	var modules = ref.modules; if ( modules === void 0 ) modules = {};
 	var actions = ref.actions; if ( actions === void 0 ) actions = {};
 	var plugins = ref.plugins; if ( plugins === void 0 ) plugins = [];
 
 	Object.assign( this, {
-		_state: state,
-		_reducers: reducers,
+		_state: {},
+		_reducers: {},
 		_modules: modules,
 		_actions: actions,
 		_plugins: plugins,
@@ -101,7 +99,7 @@ var Store = function Store( ref ) {
 		var module = modules[ i ];
 
 		// attach module state to root state
-		state[ i ] = module.state || {};
+		this$1._state[ i ] = module.state || {};
 
 		var reducers = module.reducers || {};
 		for ( var j in reducers ) {

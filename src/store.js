@@ -1,10 +1,10 @@
 import devtoolsPlugin from './plugins/devtools';
 
 class Store {
-	constructor( { state = {}, reducers = {}, modules = {}, actions = {}, plugins = [] } = {} ) {
+	constructor( { modules = {}, actions = {}, plugins = [] } = {} ) {
 		Object.assign( this, {
-			_state: state,
-			_reducers: reducers,
+			_state: {},
+			_reducers: {},
 			_modules: modules,
 			_actions: actions,
 			_plugins: plugins,
@@ -17,7 +17,7 @@ class Store {
 			const module = modules[ i ];
 
 			// attach module state to root state
-			state[ i ] = module.state || {};
+			this._state[ i ] = module.state || {};
 
 			let reducers = module.reducers || {};
 			for ( let j in reducers ) {

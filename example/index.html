@@ -18,6 +18,7 @@
 			},
 			template: `
 				<div>
+					<Foo></Foo>
 					{ count }
 					<button on-click="{ this.dispatch( 'add', 10 ) }">+</button>
 					<button on-click="{ this.dispatch( 'subtract', 5 ) }">-</button>
@@ -29,6 +30,16 @@
 				}
 			},
 		});
+
+		Regular.extend({
+			getters: {
+				c: state => state.app.c,
+			},
+			name: 'Foo',
+			template: `
+				<div class="foo">{ c }</div>
+			`,
+		})
 
 		const foo = {
 			state: { bar: 10 },
@@ -42,9 +53,9 @@
 			},
 		};
 
-		const store = new regux.Store({
+		const app = {
 			state: {
-				c: 0
+				c: 9
 			},
 			reducers: {
 				ADD( state, payload ) {
@@ -54,11 +65,16 @@
 					state.c = state.c - payload;
 				}
 			},
+		};
+
+		const store = new regux.Store({
 			modules: {
-				foo: foo
+				app: app,
+				foo: foo,
 			},
 			actions: {
 				add( context, num ) {
+					context.commit( 'app/ADD', 1 );
 					context.commit( 'foo/ADD2', num );
 					context.commit( 'foo/ADD2', num );
 					context.commit( 'foo/ADD2', num );
