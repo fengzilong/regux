@@ -56,9 +56,27 @@ var makeComputed = function ( target, getters ) {
 	Object.assign( target.computed || {}, handleComputed( getters ) );
 };
 
-// mutationType is unique in global scope
-// which is defined in one file
-// named constants.js in Redux, mutation-types.js in vuex
+// Credits: vue/vuex
+
+var devtoolsPlugin = function () { return function (store) {
+	var devtools = window.__REO_DEVTOOLS_HOOK__;
+
+	if ( !devtools ) {
+		return;
+	}
+
+	store._devtools = devtools;
+
+	devtools.emit( 'reo:init', store );
+	devtools.on( 'reo:travel-to-state', function (state) {
+		store.replaceState( state );
+	} );
+
+	store.subscribe( function ( action, state ) {
+		devtools.emit( 'reo:reducer', action, state );
+	} );
+}; }
+
 var Store = function Store( ref ) {
 	var this$1 = this;
 	if ( ref === void 0 ) ref = {};
@@ -67,54 +85,51 @@ var Store = function Store( ref ) {
 	var modules = ref.modules; if ( modules === void 0 ) modules = {};
 	var actions = ref.actions; if ( actions === void 0 ) actions = {};
 	var plugins = ref.plugins; if ( plugins === void 0 ) plugins = [];
-	var autoUpdate = ref.autoUpdate; if ( autoUpdate === void 0 ) autoUpdate = true;
 
 	Object.assign( this, {
-		_mutations: reducers,
+		_state: state,
+		_reducers: reducers,
 		_modules: modules,
 		_actions: actions,
 		_plugins: plugins,
-		_autoUpdate: autoUpdate,
 		_subscribers: [],
 		_queue: [],
 		_updateTid: null,
 	} );
 
-	Object.defineProperty( this, 'state', {
-		get: function get() {
-			return state;
-		},
-		set: function set() {
-			throw new Error( 'cannot set state directly' );
-		},
+	Object.keys( modules ).forEach( function (i) {
+		var module = modules[ i ];
+
+		// attach module state to root state
+		state[ i ] = module.state || {};
+
+		var reducers = module.reducers || {};
+		for ( var j in reducers ) {
+			reducers[ j ].key = i;
+		}
+		reducers = addNSForReducers( reducers, i );
+		// attach module reducers to root reducers
+		Object.assign( this$1._reducers, reducers );
 	} );
 
-	for ( var i in modules ) {
-		var module = modules[ i ];
-		var moduleState = module.state || {};
-		var moduleMutations = module.reducers || {};
-		state[ i ] = moduleState;
-		for ( var j in moduleMutations ) {
-			moduleMutations[ j ].key = i;
-		}
-		moduleMutations = addNSForMutation( moduleMutations, i );
-		Object.assign( this$1._mutations, moduleMutations );
-		console.log( this$1._mutations );
-	}
-
-	function addNSForMutation( mutations, ns ) {
+	function addNSForReducers( reducers, ns ) {
 		var tmp = {};
-		Object.keys( mutations ).forEach( function (key) {
-			tmp[ (ns + "/" + key) ] = mutations[ key ];
+		Object.keys( reducers ).forEach( function (key) {
+			tmp[ (ns + "/" + key) ] = reducers[ key ];
 		} );
 		return tmp;
 	}
 
 	// execute plugins
-	for ( var i$1 = 0, len = plugins.length; i$1 < len; i$1++ ) {
-		var plugin = plugins[ i$1 ];
-		plugin( this$1 );
-	}
+	devtoolsPlugin()( this );
+	plugins.forEach( function (plugin) { return plugin( this$1 ); } );
+};
+Store.prototype.replaceState = function replaceState ( newState ) {
+	this._state = newState;
+	this.updateView();
+};
+Store.prototype.getState = function getState () {
+	return this._state;
 };
 // watch( getter, cb, options ) {
 //
@@ -127,7 +142,6 @@ Store.prototype.nextTick = function nextTick () {
 };
 Store.prototype.queue = function queue ( fn ) {
 	this._queue.push( fn );
-	return this;
 };
 Store.prototype.dequeue = function dequeue () {
 	var queue = this._queue;
@@ -137,7 +151,6 @@ Store.prototype.dequeue = function dequeue () {
 		}
 	} );
 	this._queue.length = 0;
-	return this;
 };
 Store.prototype.dispatch = function dispatch ( type, payload ) {
 	var action;
@@ -152,11 +165,16 @@ Store.prototype.dispatch = function dispatch ( type, payload ) {
 
 	var act = this._actions[ action.type ];
 
-	if ( typeof act === 'function' ) {
-		return act.call( this, action.payload );
-	} else {
-		console.error( 'action', action.type, 'not found' );
+	if ( typeof act !== 'function' ) {
+		return console.error( 'action', action.type, 'not found' );
 	}
+
+	return act( {
+		state: this.getState(),
+		commit: this.commit.bind( this ),
+		dispatch: this.dispatch.bind( this ),
+		nextTick: this.nextTick.bind( this ),
+	}, action.payload );
 };
 Store.prototype.commit = function commit ( type, payload ) {
 		var this$1 = this;
@@ -173,28 +191,28 @@ Store.prototype.commit = function commit ( type, payload ) {
 
 	// mutation -> { type: 'foo', payload: 'bar' }
 
-	var mutate = this._mutations[ mutation.type ];
-	if ( typeof mutate === 'function' ) {
-		var state = typeof mutate.key === 'undefined' ? this.state : this.state[ mutate.key ];
+	var reducer = this._reducers[ mutation.type ];
+	if ( typeof reducer === 'function' ) {
+		var state = this.getState();
+		var moduleState = typeof reducer.key === 'undefined' ? state : state[ reducer.key ];
 
-		mutate( state, mutation.payload );
+		reducer( moduleState, mutation.payload );
 
-		this._applySubscribers( mutation, this.state );
+		// notify subscribers that state has been changed
+		this._applySubscribers( mutation, state );
 
-		if ( this._autoUpdate ) {
-			if ( this._updateTid ) {
-				clearTimeout( this._updateTid );
-			}
-			this._updateTid = setTimeout( function () {
-				this$1.updateView();
-				this$1.dequeue();
-			}, 0 );
+		// try to update view
+		if ( this._updateTid ) {
+			clearTimeout( this._updateTid );
 		}
+
+		this._updateTid = setTimeout( function () {
+			this$1.updateView();
+			this$1.dequeue();
+		}, 0 );
 	} else {
 		console.error( 'reducer', mutation.type, 'not found' );
 	}
-
-	return this;
 };
 Store.prototype.updateView = function updateView () {
 	this._host.$update();
@@ -208,8 +226,6 @@ Store.prototype.subscribe = function subscribe ( fn ) {
 	}
 
 	this._subscribers.push( fn );
-
-	return this;
 };
 Store.prototype._applySubscribers = function _applySubscribers ( mutation, state ) {
 	var subscribers = this._subscribers;
@@ -259,24 +275,16 @@ var regux = function (Component) {
 				this.$store = store;
 				this.commit = store.commit.bind( store );
 				this.dispatch = store.dispatch.bind( store );
-				this.nextTick = store.queue.bind( store );
+				this.nextTick = store.nextTick.bind( store );
 
-				// regux
 				var ref = this;
 				var getters = ref.getters; if ( getters === void 0 ) getters = {};
-
-				var keys;
-
-				keys = Object.keys( getters );
-				var loop = function ( i, len ) {
-					var key = keys[ i ];
+				Object.keys( getters ).forEach( function (key) {
 					var getter = getters[ key ];
 					getters[ key ] = function () {
-						return getter( store.state );
+						return getter( store.getState() );
 					};
-				};
-
-				for ( var i = 0, len = keys.length; i < len; i++ ) loop( i, len );
+				} );
 				// TODO: 从state获取的getters依赖，脏值检查一轮就可以全部稳定下来，需要考虑下是否有必要使用计算属性
 				makeComputed( this, getters );
 			}

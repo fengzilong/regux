@@ -5,7 +5,7 @@
   "main": "dist/regux.js",
   "scripts": {
     "dev": "onchange \"src\" -i -v -- npm run build",
-    "build": "bubleup ./src/index.js -d dist --format umd --name regux & bubleup ./src/logger.js -d ./ --format umd --name logger",
+    "build": "bubleup ./src/index.js -d dist --format umd --name regux & bubleup ./src/plugins/logger.js -d ./ --format umd --name logger",
     "lint": "eslint src"
   },
   "eslintConfig": {

@@ -1,54 +1,51 @@
-// mutationType is unique in global scope
-// which is defined in one file
-// named constants.js in Redux, mutation-types.js in vuex
+import devtoolsPlugin from './plugins/devtools';
+
 class Store {
-	constructor( { state = {}, reducers = {}, modules = {}, actions = {}, plugins = [], autoUpdate = true } = {} ) {
+	constructor( { state = {}, reducers = {}, modules = {}, actions = {}, plugins = [] } = {} ) {
 		Object.assign( this, {
-			_mutations: reducers,
+			_state: state,
+			_reducers: reducers,
 			_modules: modules,
 			_actions: actions,
 			_plugins: plugins,
-			_autoUpdate: autoUpdate,
 			_subscribers: [],
 			_queue: [],
 			_updateTid: null,
 		} );
 
-		Object.defineProperty( this, 'state', {
-			get() {
-				return state;
-			},
-			set() {
-				throw new Error( 'cannot set state directly' );
-			},
+		Object.keys( modules ).forEach( i => {
+			const module = modules[ i ];
+
+			// attach module state to root state
+			state[ i ] = module.state || {};
+
+			let reducers = module.reducers || {};
+			for ( let j in reducers ) {
+				reducers[ j ].key = i;
+			}
+			reducers = addNSForReducers( reducers, i );
+			// attach module reducers to root reducers
+			Object.assign( this._reducers, reducers );
 		} );
 
-		for ( let i in modules ) {
-			const module = modules[ i ];
-			const moduleState = module.state || {};
-			let moduleMutations = module.reducers || {};
-			state[ i ] = moduleState;
-			for ( let j in moduleMutations ) {
-				moduleMutations[ j ].key = i;
-			}
-			moduleMutations = addNSForMutation( moduleMutations, i );
-			Object.assign( this._mutations, moduleMutations );
-			console.log( this._mutations );
-		}
-
-		function addNSForMutation( mutations, ns ) {
+		function addNSForReducers( reducers, ns ) {
 			const tmp = {};
-			Object.keys( mutations ).forEach( key => {
-				tmp[ `${ ns }/${ key }` ] = mutations[ key ];
+			Object.keys( reducers ).forEach( key => {
+				tmp[ `${ ns }/${ key }` ] = reducers[ key ];
 			} );
 			return tmp;
 		}
 
 		// execute plugins
-		for ( let i = 0, len = plugins.length; i < len; i++ ) {
-			let plugin = plugins[ i ];
-			plugin( this );
-		}
+		devtoolsPlugin()( this );
+		plugins.forEach( plugin => plugin( this ) );
+	}
+	replaceState( newState ) {
+		this._state = newState;
+		this.updateView();
+	}
+	getState() {
+		return this._state;
 	}
 	// watch( getter, cb, options ) {
 	//
@@ -58,7 +55,6 @@ class Store {
 	}
 	queue( fn ) {
 		this._queue.push( fn );
-		return this;
 	}
 	dequeue() {
 		const queue = this._queue;
@@ -68,7 +64,6 @@ class Store {
 			}
 		} );
 		this._queue.length = 0;
-		return this;
 	}
 	dispatch( type, payload ) {
 		let action;
@@ -83,11 +78,16 @@ class Store {
 
 		const act = this._actions[ action.type ];
 
-		if ( typeof act === 'function' ) {
-			return act.call( this, action.payload );
-		} else {
-			console.error( 'action', action.type, 'not found' );
+		if ( typeof act !== 'function' ) {
+			return console.error( 'action', action.type, 'not found' );
 		}
+
+		return act( {
+			state: this.getState(),
+			commit: this.commit.bind( this ),
+			dispatch: this.dispatch.bind( this ),
+			nextTick: this.nextTick.bind( this ),
+		}, action.payload );
 	}
 	commit( type, payload ) {
 		let mutation;
@@ -102,28 +102,28 @@ class Store {
 
 		// mutation -> { type: 'foo', payload: 'bar' }
 
-		const mutate = this._mutations[ mutation.type ];
-		if ( typeof mutate === 'function' ) {
-			let state = typeof mutate.key === 'undefined' ? this.state : this.state[ mutate.key ];
+		const reducer = this._reducers[ mutation.type ];
+		if ( typeof reducer === 'function' ) {
+			const state = this.getState();
+			const moduleState = typeof reducer.key === 'undefined' ? state : state[ reducer.key ];
 
-			mutate( state, mutation.payload );
+			reducer( moduleState, mutation.payload );
 
-			this._applySubscribers( mutation, this.state );
+			// notify subscribers that state has been changed
+			this._applySubscribers( mutation, state );
 
-			if ( this._autoUpdate ) {
-				if ( this._updateTid ) {
-					clearTimeout( this._updateTid );
-				}
-				this._updateTid = setTimeout( () => {
-					this.updateView();
-					this.dequeue();
-				}, 0 );
+			// try to update view
+			if ( this._updateTid ) {
+				clearTimeout( this._updateTid );
 			}
+
+			this._updateTid = setTimeout( () => {
+				this.updateView();
+				this.dequeue();
+			}, 0 );
 		} else {
 			console.error( 'reducer', mutation.type, 'not found' );
 		}
-
-		return this;
 	}
 	updateView() {
 		this._host.$update();
@@ -137,8 +137,6 @@ class Store {
 		}
 
 		this._subscribers.push( fn );
-
-		return this;
 	}
 	_applySubscribers( mutation, state ) {
 		const subscribers = this._subscribers;

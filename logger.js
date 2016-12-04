@@ -13,7 +13,7 @@ function createLogger( ref ) {
 	var mutationTransformer = ref.mutationTransformer; if ( mutationTransformer === void 0 ) mutationTransformer = function (mut) { return mut; };
 
 	return function (store) {
-		var prevState = JSON.parse( JSON.stringify( store.state ) );
+		var prevState = JSON.parse( JSON.stringify( store.getState() ) );
 		store.subscribe( function ( mutation, state ) {
 			var nextState = JSON.parse( JSON.stringify( state ) );
 			var time = new Date();

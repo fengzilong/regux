@@ -60,16 +60,16 @@
 				foo: foo
 			},
 			actions: {
-				add( num ) {
-					this.commit( 'foo/ADD2', num );
-					this.commit( 'foo/ADD2', num );
-					this.commit( 'foo/ADD2', num );
-					this.commit( 'foo/SUBTRACT2', num );
-					this.nextTick( function() {
+				add( context, num ) {
+					context.commit( 'foo/ADD2', num );
+					context.commit( 'foo/ADD2', num );
+					context.commit( 'foo/ADD2', num );
+					context.commit( 'foo/SUBTRACT2', num );
+					context.nextTick( function() {
 					} );
 				},
-				subtract( num ) {
-					this.commit( 'foo/SUBTRACT2', num );
+				subtract( context, num ) {
+					context.commit( 'foo/SUBTRACT2', num );
 				}
 			},
 			plugins: [ logger( { collapsed: true } ) ]

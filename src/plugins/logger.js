@@ -6,7 +6,7 @@ function createLogger( {
 	mutationTransformer = mut => mut
 } = {} ) {
 	return store => {
-		let prevState = JSON.parse( JSON.stringify( store.state ) );
+		let prevState = JSON.parse( JSON.stringify( store.getState() ) );
 		store.subscribe( ( mutation, state ) => {
 			const nextState = JSON.parse( JSON.stringify( state ) );
 			const time = new Date();

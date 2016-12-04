@@ -32,21 +32,15 @@ const regux = Component => {
 				this.$store = store;
 				this.commit = store.commit.bind( store );
 				this.dispatch = store.dispatch.bind( store );
-				this.nextTick = store.queue.bind( store );
+				this.nextTick = store.nextTick.bind( store );
 
-				// regux
 				const { getters = {} } = this;
-
-				let keys;
-
-				keys = Object.keys( getters );
-				for ( let i = 0, len = keys.length; i < len; i++ ) {
-					const key = keys[ i ];
+				Object.keys( getters ).forEach( key => {
 					const getter = getters[ key ];
 					getters[ key ] = function () {
-						return getter( store.state );
+						return getter( store.getState() );
 					};
-				}
+				} );
 				// TODO: 从state获取的getters依赖，脏值检查一轮就可以全部稳定下来，需要考虑下是否有必要使用计算属性
 				makeComputed( this, getters );
 			}
