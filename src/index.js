@@ -34,14 +34,23 @@ const regux = Component => {
 				this.dispatch = store.dispatch.bind( store );
 				this.nextTick = store.nextTick.bind( store );
 
+				const commonGetters = store.getGetters();
+
 				const { getters = {} } = this;
 				Object.keys( getters ).forEach( key => {
-					const getter = getters[ key ];
-					getters[ key ] = function () {
-						return getter( store.getState() );
-					};
+					let getter = getters[ key ];
+
+					// if getter is string, try getting it from commonGetters
+					if ( typeof getter === 'string' ) {
+						getter = commonGetters[ getter ];
+					}
+
+					if ( typeof getter === 'function' ) {
+						getters[ key ] = function () {
+							return getter( store.getState() );
+						};
+					}
 				} );
-				// TODO: 从state获取的getters依赖，脏值检查一轮就可以全部稳定下来，需要考虑下是否有必要使用计算属性
 				makeComputed( this, getters );
 			}
 		}

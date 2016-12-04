@@ -88,6 +88,7 @@ var Store = function Store( ref ) {
 		_state: {},
 		_reducers: {},
 		_modules: modules,
+		_getters: {},
 		_actions: actions,
 		_plugins: plugins,
 		_subscribers: [],
@@ -111,6 +112,9 @@ Store.prototype.replaceState = function replaceState ( newState ) {
 };
 Store.prototype.getState = function getState () {
 	return this._state;
+};
+Store.prototype.getGetters = function getGetters () {
+	return this._getters;
 };
 // watch( getter, cb, options ) {
 //
@@ -232,6 +236,11 @@ Store.prototype.registerActions = function registerActions ( actions ) {
 
 	Object.assign( this._actions, actions );
 };
+Store.prototype.registerGetters = function registerGetters ( getters ) {
+		if ( getters === void 0 ) getters = {};
+
+	Object.assign( this._getters, getters );
+};
 Store.prototype._applySubscribers = function _applySubscribers ( mutation, state ) {
 	var subscribers = this._subscribers;
 
@@ -290,15 +299,24 @@ var regux = function (Component) {
 				this.dispatch = store.dispatch.bind( store );
 				this.nextTick = store.nextTick.bind( store );
 
+				var commonGetters = store.getGetters();
+
 				var ref = this;
 				var getters = ref.getters; if ( getters === void 0 ) getters = {};
 				Object.keys( getters ).forEach( function (key) {
 					var getter = getters[ key ];
-					getters[ key ] = function () {
-						return getter( store.getState() );
-					};
+
+					// if getter is string, try getting it from commonGetters
+					if ( typeof getter === 'string' ) {
+						getter = commonGetters[ getter ];
+					}
+
+					if ( typeof getter === 'function' ) {
+						getters[ key ] = function () {
+							return getter( store.getState() );
+						};
+					}
 				} );
-				// TODO: 从state获取的getters依赖，脏值检查一轮就可以全部稳定下来，需要考虑下是否有必要使用计算属性
 				makeComputed( this, getters );
 			}
 		}

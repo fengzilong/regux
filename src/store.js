@@ -6,6 +6,7 @@ class Store {
 			_state: {},
 			_reducers: {},
 			_modules: modules,
+			_getters: {},
 			_actions: actions,
 			_plugins: plugins,
 			_subscribers: [],
@@ -29,6 +30,9 @@ class Store {
 	}
 	getState() {
 		return this._state;
+	}
+	getGetters() {
+		return this._getters;
 	}
 	// watch( getter, cb, options ) {
 	//
@@ -139,6 +143,9 @@ class Store {
 	}
 	registerActions( actions = {} ) {
 		Object.assign( this._actions, actions );
+	}
+	registerGetters( getters = {} ) {
+		Object.assign( this._getters, getters );
 	}
 	_applySubscribers( mutation, state ) {
 		const subscribers = this._subscribers;
