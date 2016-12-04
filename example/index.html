@@ -12,9 +12,7 @@
 
 		const App = Regular.extend({
 			getters: {
-				count: function( state ) {
-					return state.foo.bar;
-				}
+				count: 'count',
 			},
 			template: `
 				<div>
@@ -90,7 +88,12 @@
 			subtract( context, num ) {
 				context.commit( 'foo/SUBTRACT2', num );
 			}
-		} )
+		} );
+		store.registerGetters( {
+			count: function( state ) {
+				return state.foo.bar;
+			}
+		} );
 
 		// inject store into child components on top level
 		new App( { store: store } ).$inject( document.body );
