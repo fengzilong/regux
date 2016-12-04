@@ -1,6 +1,6 @@
 {
   "name": "regux",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "redux-inspired application architecture for regular",
   "main": "dist/regux.js",
   "scripts": {
@@ -11,7 +11,7 @@
   "eslintConfig": {
     "extends": "mo/browser",
     "rules": {
-        "guard-for-in": "warn"
+      "guard-for-in": "warn"
     }
   },
   "repository": {
