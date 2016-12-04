@@ -10,61 +10,67 @@
 	<script type="text/javascript">
 		Regular.use( regux );
 
+		const getters = {
+			count: function( state ) {
+				return state.foo.bar;
+			}
+		};
+
 		const App = Regular.extend({
+			getters: getters,
 			template: `
 				<div>
 					{ count }
-					<button on-click="{ this.onAdd( 10 ) }">+</button>
-					<button on-click="{ this.onSubtract( 5 ) }">-</button>
+					<button on-click="{ this.dispatch( 'add', 10 ) }">+</button>
+					<button on-click="{ this.dispatch( 'subtract', 5 ) }">-</button>
 				</div>
 			`,
-			regux: {
-				getters: {
-					count: function( state ) {
-						return state.foo.bar;
-					}
-				},
-				actions: {
-					onAdd( store, num ) {
-						store.dispatch( { type: 'ADD2', payload: num } );
-					},
-					onSubtract( store, num ) {
-						store.dispatch( { type: 'SUBTRACT2', payload: num } );
-					}
-				},
-			}
-		});
-
-		const state = {
-			c: 0
-		};
-
-		const mutations = {
-			ADD( state, mutation ) {
-				state.c = state.c + mutation.payload;
+			events: {
+				$update() {
+					console.log( 'view updated' );
+				}
 			},
-			SUBTRACT( state, mutation ) {
-				state.c = state.c - mutation.payload;
-			}
-		};
+		});
 
 		const foo = {
 			state: { bar: 10 },
-			mutations: {
-				ADD2( state, mutation ) {
-					state.bar = state.bar + mutation.payload;
+			reducers: {
+				ADD2( state, payload ) {
+					state.bar = state.bar + payload;
 				},
-				SUBTRACT2( state, mutation ) {
-					state.bar = state.bar - mutation.payload;
+				SUBTRACT2( state, payload ) {
+					state.bar = state.bar - payload;
 				}
-			}
+			},
 		};
 
 		const store = new regux.Store({
-			state,
-			mutations,
+			state: {
+				c: 0
+			},
+			reducers: {
+				ADD( state, payload ) {
+					state.c = state.c + payload;
+				},
+				SUBTRACT( state, payload ) {
+					state.c = state.c - payload;
+				}
+			},
 			modules: {
 				foo: foo
+			},
+			actions: {
+				add( num ) {
+					this.commit( 'foo/ADD2', num );
+					this.commit( 'foo/ADD2', num );
+					this.commit( 'foo/ADD2', num );
+					this.commit( 'foo/SUBTRACT2', num );
+					this.nextTick( function() {
+					} );
+				},
+				subtract( num ) {
+					this.commit( 'foo/SUBTRACT2', num );
+				}
 			},
 			plugins: [ logger( { collapsed: true } ) ]
 		});

@@ -63,17 +63,21 @@ var Store = function Store( ref ) {
 	var this$1 = this;
 	if ( ref === void 0 ) ref = {};
 	var state = ref.state; if ( state === void 0 ) state = {};
-	var mutations = ref.mutations; if ( mutations === void 0 ) mutations = {};
+	var reducers = ref.reducers; if ( reducers === void 0 ) reducers = {};
 	var modules = ref.modules; if ( modules === void 0 ) modules = {};
+	var actions = ref.actions; if ( actions === void 0 ) actions = {};
 	var plugins = ref.plugins; if ( plugins === void 0 ) plugins = [];
 	var autoUpdate = ref.autoUpdate; if ( autoUpdate === void 0 ) autoUpdate = true;
 
 	Object.assign( this, {
-		_mutations: mutations,
+		_mutations: reducers,
 		_modules: modules,
+		_actions: actions,
 		_plugins: plugins,
 		_autoUpdate: autoUpdate,
-		_subscribers: []
+		_subscribers: [],
+		_queue: [],
+		_updateTid: null,
 	} );
 
 	Object.defineProperty( this, 'state', {
@@ -88,12 +92,22 @@ var Store = function Store( ref ) {
 	for ( var i in modules ) {
 		var module = modules[ i ];
 		var moduleState = module.state || {};
-		var moduleMutations = module.mutations || {};
+		var moduleMutations = module.reducers || {};
 		state[ i ] = moduleState;
 		for ( var j in moduleMutations ) {
 			moduleMutations[ j ].key = i;
 		}
-		merge( this$1._mutations, moduleMutations );
+		moduleMutations = addNSForMutation( moduleMutations, i );
+		Object.assign( this$1._mutations, moduleMutations );
+		console.log( this$1._mutations );
+	}
+
+	function addNSForMutation( mutations, ns ) {
+		var tmp = {};
+		Object.keys( mutations ).forEach( function (key) {
+			tmp[ (ns + "/" + key) ] = mutations[ key ];
+		} );
+		return tmp;
 	}
 
 	// execute plugins
@@ -105,29 +119,85 @@ var Store = function Store( ref ) {
 // watch( getter, cb, options ) {
 //
 // }
-Store.prototype.commit = function commit () {
+Store.prototype.nextTick = function nextTick () {
+		var args = [], len = arguments.length;
+		while ( len-- ) args[ len ] = arguments[ len ];
+
+	return this.queue.apply( this, args );
 };
-Store.prototype.dispatch = function dispatch ( mutation ) {
-	// mutation -> { type: 'foo', payload: 'bar' }
-	if ( !isValidMutationObject( mutation ) ) {
-		return console.warn( 'invalid mutation', mutation );
+Store.prototype.queue = function queue ( fn ) {
+	this._queue.push( fn );
+	return this;
+};
+Store.prototype.dequeue = function dequeue () {
+	var queue = this._queue;
+	queue.forEach( function (v) {
+		if ( typeof v === 'function' ) {
+			v();
+		}
+	} );
+	this._queue.length = 0;
+	return this;
+};
+Store.prototype.dispatch = function dispatch ( type, payload ) {
+	var action;
+
+	if ( typeof type === 'string' ) {
+		action = { type: type, payload: payload };
+	} else if ( isValidMutation( type ) ) {
+		action = type;
+	} else {
+		return console.error( 'invalid dispatch params', arguments );
 	}
+
+	var act = this._actions[ action.type ];
+
+	if ( typeof act === 'function' ) {
+		return act.call( this, action.payload );
+	} else {
+		console.error( 'action', action.type, 'not found' );
+	}
+};
+Store.prototype.commit = function commit ( type, payload ) {
+		var this$1 = this;
+
+	var mutation;
+
+	if ( typeof type === 'string' ) {
+		mutation = { type: type, payload: payload };
+	} else if ( isValidMutation( type ) ) {
+		mutation = type;
+	} else {
+		return console.error( 'invalid commit params', arguments );
+	}
+
+	// mutation -> { type: 'foo', payload: 'bar' }
 
 	var mutate = this._mutations[ mutation.type ];
 	if ( typeof mutate === 'function' ) {
 		var state = typeof mutate.key === 'undefined' ? this.state : this.state[ mutate.key ];
 
-		mutate( state, mutation );
+		mutate( state, mutation.payload );
 
 		this._applySubscribers( mutation, this.state );
 
-		// TODO: remove, use commit to force update
 		if ( this._autoUpdate ) {
-			this._host.$update();
+			if ( this._updateTid ) {
+				clearTimeout( this._updateTid );
+			}
+			this._updateTid = setTimeout( function () {
+				this$1.updateView();
+				this$1.dequeue();
+			}, 0 );
 		}
+	} else {
+		console.error( 'reducer', mutation.type, 'not found' );
 	}
 
 	return this;
+};
+Store.prototype.updateView = function updateView () {
+	this._host.$update();
 };
 Store.prototype.host = function host ( target ) {
 	this._host = target;
@@ -144,37 +214,13 @@ Store.prototype.subscribe = function subscribe ( fn ) {
 Store.prototype._applySubscribers = function _applySubscribers ( mutation, state ) {
 	var subscribers = this._subscribers;
 
-	if ( subscribers.length === 0 ) {
-		return;
-	}
-
-	// TODO: shall we deepClone state?
-
 	for ( var i = 0, len = subscribers.length; i < len; i++ ) {
 		var subscriber = subscribers[ i ];
 		subscriber( mutation, state );
 	}
 };
 
-function merge( dest ) {
-	var source = [], len$1 = arguments.length - 1;
-	while ( len$1-- > 0 ) source[ len$1 ] = arguments[ len$1 + 1 ];
-
-	if ( dest === void 0 ) dest = {};
-	var i, j, len;
-	for ( i = 0, len = source.length; i < len; i++ ) {
-		var src = source[ i ];
-		for ( j in src ) {
-			if ( j in dest ) {
-				console.warn( ("[merge]: " + j + " already existed, will be overrided") );
-			}
-			dest[ j ] = src[ j ];
-		}
-	}
-	return dest;
-}
-
-function isValidMutationObject( mutation ) {
+function isValidMutation( mutation ) {
 	return typeof mutation.type !== 'undefined';
 }
 
@@ -190,32 +236,34 @@ var regux = function (Component) {
 	Component.implement( {
 		events: {
 			$config: function $config() {
-				var this$1 = this;
-
 				if ( isStore( this.store ) ) {
 					if ( store ) {
 						// store already exists
-						console.group( 'store already exists' );
+						console.groupCollapsed( 'store already exists' );
 						console.log( 'old store:', store );
 						console.log( 'new store:', this.store );
 						console.groupEnd( 'store already exists' );
 						console.warn( 'old store will be used' );
 					} else {
-						// get store
+						// save store
 						store = this.store;
 						store.host( this );
 						delete this.store;
 					}
 				}
 
+				if ( !store ) {
+					return console.error( 'store not found' );
+				}
+
 				this.$store = store;
+				this.commit = store.commit.bind( store );
+				this.dispatch = store.dispatch.bind( store );
+				this.nextTick = store.queue.bind( store );
 
 				// regux
 				var ref = this;
-				var regux = ref.regux; if ( regux === void 0 ) regux = {};
-				// mutations, actions, getters
-				var actions = regux.actions; if ( actions === void 0 ) actions = {};
-				var getters = regux.getters; if ( getters === void 0 ) getters = {};
+				var getters = ref.getters; if ( getters === void 0 ) getters = {};
 
 				var keys;
 
@@ -229,21 +277,8 @@ var regux = function (Component) {
 				};
 
 				for ( var i = 0, len = keys.length; i < len; i++ ) loop( i, len );
+				// TODO: 从state获取的getters依赖，脏值检查一轮就可以全部稳定下来，需要考虑下是否有必要使用计算属性
 				makeComputed( this, getters );
-
-				keys = Object.keys( actions );
-				var loop$1 = function ( i, len ) {
-					var key$1 = keys[ i ];
-					var action = actions[ key$1 ];
-					this$1[ key$1 ] = function () {
-						var args = [], len = arguments.length;
-						while ( len-- ) args[ len ] = arguments[ len ];
-
-						return action.apply( this, [ store ].concat( args ) );
-					};
-				};
-
-				for ( var i$1 = 0, len$1 = keys.length; i$1 < len$1; i$1++ ) loop$1( i$1, len$1 );
 			}
 		}
 	} );
