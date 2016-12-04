@@ -4,54 +4,61 @@
 	(global.regux = factory());
 }(this, (function () { 'use strict';
 
-var handleComputed = (function(){
+var handleComputed = ( function () {
 	// wrap the computed getter;
-	function wrapGet( get ){
-		return function( context ){
+	function wrapGet( get ) {
+		return function ( context ) {
 			return get.call( context, context.data );
-		}
+		};
 	}
 	// wrap the computed setter;
-	function wrapSet( set ){
-		return function( context, value ){
+	function wrapSet( set ) {
+		return function ( context, value ) {
 			set.call( context, value, context.data );
 			return value;
-		}
+		};
 	}
 
-	return function( computed ) {
-		if ( !computed ) { return; }
-		var parsedComputed = {}, handle, pair, type;
+	return function ( computed ) {
+		if ( !computed ) {
+			return;
+		}
+		var parsedComputed = {};
+		var handle, pair, type;
 		for ( var i in computed ) {
-			handle = computed[ i ]
+			handle = computed[ i ];
 			type = typeof handle;
 
 			if ( handle.type === 'expression' ) {
 				parsedComputed[ i ] = handle;
 				continue;
 			}
-			if ( type === "string" ) {
-				parsedComputed[ i ] = parse.expression( handle )
-			} else {
+			if ( type !== 'string' ) {
 				pair = parsedComputed[ i ] = { type: 'expression' };
-				if ( type === "function" ) {
+				if ( type === 'function' ) {
 					pair.get = wrapGet( handle );
 				} else {
-					if( handle.get ) { pair.get = wrapGet( handle.get ); }
-					if( handle.set ) { pair.set = wrapSet( handle.set ); }
+					if ( handle.get ) {
+						pair.get = wrapGet( handle.get );
+					}
+					if ( handle.set ) {
+						pair.set = wrapSet( handle.set );
+					}
 				}
 			}
 		}
 		return parsedComputed;
-	}
-})();
+	};
+} )();
 
 // generate computed properties from getters
 var makeComputed = function ( target, getters ) {
 	Object.assign( target.computed || {}, handleComputed( getters ) );
 };
 
-// mutationType is unique in global scope, which is defined in one file, named constants.js in Redux, mutation-types.js in vuex
+// mutationType is unique in global scope
+// which is defined in one file
+// named constants.js in Redux, mutation-types.js in vuex
 var Store = function Store( ref ) {
 	var this$1 = this;
 	if ( ref === void 0 ) ref = {};
@@ -70,55 +77,52 @@ var Store = function Store( ref ) {
 	} );
 
 	Object.defineProperty( this, 'state', {
-		get: function () { return state; },
-		set: function () { throw new Error( 'cannot set state directly' ) }
+		get: function get() {
+			return state;
+		},
+		set: function set() {
+			throw new Error( 'cannot set state directly' );
+		},
 	} );
 
-	for( var i in modules ) {
+	for ( var i in modules ) {
 		var module = modules[ i ];
 		var moduleState = module.state || {};
 		var moduleMutations = module.mutations || {};
 		state[ i ] = moduleState;
-		for( var j in moduleMutations ) {
+		for ( var j in moduleMutations ) {
 			moduleMutations[ j ].key = i;
 		}
 		merge( this$1._mutations, moduleMutations );
 	}
 
 	// execute plugins
-	for( var i$1 = 0, len = plugins.length; i$1 < len; i$1++ ) {
+	for ( var i$1 = 0, len = plugins.length; i$1 < len; i$1++ ) {
 		var plugin = plugins[ i$1 ];
 		plugin( this$1 );
 	}
 };
-Store.prototype.watch = function watch ( getter, cb, options ) {
-
-};
-Store.prototype.commit = function commit ( mutation ) {
-	// TODO: same as dispatch, but will force update
+// watch( getter, cb, options ) {
+//
+// }
+Store.prototype.commit = function commit () {
 };
 Store.prototype.dispatch = function dispatch ( mutation ) {
 	// mutation -> { type: 'foo', payload: 'bar' }
-	if( !isValidMutationObject( mutation ) ) {
-		console.warn( 'invalid mutation', mutation );
-		return;
+	if ( !isValidMutationObject( mutation ) ) {
+		return console.warn( 'invalid mutation', mutation );
 	}
 
-	var mutationType = mutation.type;
-	var payload = mutation.payload;
-	var mutate = this._mutations[ mutationType ];
-
-	if( typeof mutate === 'function' ) {
-		var state = typeof mutate.key === 'undefined'
-			? this.state
-			: this.state[ mutate.key ];
+	var mutate = this._mutations[ mutation.type ];
+	if ( typeof mutate === 'function' ) {
+		var state = typeof mutate.key === 'undefined' ? this.state : this.state[ mutate.key ];
 
 		mutate( state, mutation );
 
 		this._applySubscribers( mutation, this.state );
-			
+
 		// TODO: remove, use commit to force update
-		if( this._autoUpdate ) {
+		if ( this._autoUpdate ) {
 			this._host.$update();
 		}
 	}
@@ -129,7 +133,7 @@ Store.prototype.host = function host ( target ) {
 	this._host = target;
 };
 Store.prototype.subscribe = function subscribe ( fn ) {
-	if( typeof fn !== 'function' ) {
+	if ( typeof fn !== 'function' ) {
 		return;
 	}
 
@@ -140,7 +144,7 @@ Store.prototype.subscribe = function subscribe ( fn ) {
 Store.prototype._applySubscribers = function _applySubscribers ( mutation, state ) {
 	var subscribers = this._subscribers;
 
-	if( subscribers.length === 0 ) {
+	if ( subscribers.length === 0 ) {
 		return;
 	}
 
@@ -160,8 +164,8 @@ function merge( dest ) {
 	var i, j, len;
 	for ( i = 0, len = source.length; i < len; i++ ) {
 		var src = source[ i ];
-		for( j in src ) {
-			if( j in dest ) {
+		for ( j in src ) {
+			if ( j in dest ) {
 				console.warn( ("[merge]: " + j + " already existed, will be overrided") );
 			}
 			dest[ j ] = src[ j ];
@@ -178,27 +182,29 @@ function isStore( ins ) {
 	return ins && ins instanceof Store;
 }
 
+/* eslint-disable no-loop-func */
+
 var regux = function (Component) {
 	// one store in Component scope
 	var store;
-	Component.implement({
+	Component.implement( {
 		events: {
-			$config: function() {
+			$config: function $config() {
 				var this$1 = this;
 
-				if( isStore( this.store ) ) {
-					if( !store ) {
-						// get store
-						store = this.store;
-						store.host( this );
-						delete this.store;
-					} else {
+				if ( isStore( this.store ) ) {
+					if ( store ) {
 						// store already exists
 						console.group( 'store already exists' );
 						console.log( 'old store:', store );
 						console.log( 'new store:', this.store );
 						console.groupEnd( 'store already exists' );
 						console.warn( 'old store will be used' );
+					} else {
+						// get store
+						store = this.store;
+						store.host( this );
+						delete this.store;
 					}
 				}
 
@@ -206,16 +212,10 @@ var regux = function (Component) {
 
 				// regux
 				var ref = this;
-				var regux = ref.regux;
-				regux = regux || {};
-
+				var regux = ref.regux; if ( regux === void 0 ) regux = {};
 				// mutations, actions, getters
-				var mutations = regux.mutations;
-				var actions = regux.actions;
-				var getters = regux.getters;
-				mutations = mutations || {};
-				actions = actions || {};
-				getters = getters || {};
+				var actions = regux.actions; if ( actions === void 0 ) actions = {};
+				var getters = regux.getters; if ( getters === void 0 ) getters = {};
 
 				var keys;
 
@@ -223,7 +223,7 @@ var regux = function (Component) {
 				var loop = function ( i, len ) {
 					var key = keys[ i ];
 					var getter = getters[ key ];
-					getters[ key ] = function( data ) {
+					getters[ key ] = function () {
 						return getter( store.state );
 					};
 				};
@@ -235,7 +235,7 @@ var regux = function (Component) {
 				var loop$1 = function ( i, len ) {
 					var key$1 = keys[ i ];
 					var action = actions[ key$1 ];
-					this$1[ key$1 ] = function() {
+					this$1[ key$1 ] = function () {
 						var args = [], len = arguments.length;
 						while ( len-- ) args[ len ] = arguments[ len ];
 
@@ -246,7 +246,7 @@ var regux = function (Component) {
 				for ( var i$1 = 0, len$1 = keys.length; i$1 < len$1; i$1++ ) loop$1( i$1, len$1 );
 			}
 		}
-	})
+	} );
 };
 
 regux.Store = Store;

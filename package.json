@@ -5,7 +5,14 @@
   "main": "dist/regux.js",
   "scripts": {
     "dev": "onchange \"src\" -i -v -- npm run build",
-    "build": "bubleup ./src/index.js -d dist --format umd --name regux & bubleup ./src/logger.js -d ./ --format umd --name logger"
+    "build": "bubleup ./src/index.js -d dist --format umd --name regux & bubleup ./src/logger.js -d ./ --format umd --name logger",
+    "lint": "eslint src"
+  },
+  "eslintConfig": {
+    "extends": "mo/browser",
+    "rules": {
+        "guard-for-in": "warn"
+    }
   },
   "repository": {
     "type": "git",
@@ -23,5 +30,9 @@
   "bugs": {
     "url": "https://github.com/fengzilong/regux/issues"
   },
-  "homepage": "https://github.com/fengzilong/regux#readme"
+  "homepage": "https://github.com/fengzilong/regux#readme",
+  "devDependencies": {
+    "eslint": "^3.11.1",
+    "eslint-config-mo": "0.0.2"
+  }
 }
