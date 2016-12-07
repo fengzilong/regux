@@ -75,6 +75,10 @@ var devtoolsPlugin = function () { return function (store) {
 	store.subscribe( function ( action, state ) {
 		devtools.emit( 'reo:reducer', action, state );
 	} );
+
+	store.subscribeViewUpdate( function () {
+		devtools.emit( 'reo:view-updated' );
+	} );
 }; }
 
 var Store = function Store( ref ) {
@@ -92,6 +96,7 @@ var Store = function Store( ref ) {
 		_actions: actions,
 		_plugins: plugins,
 		_subscribers: [],
+		_viewUpdateSubscribers: [],
 		_queue: [],
 		_updateTid: null,
 	} );
@@ -201,6 +206,7 @@ Store.prototype.commit = function commit ( type, payload ) {
 };
 Store.prototype.updateView = function updateView () {
 	this._host.$update();
+	this._viewUpdateSubscribers.forEach( function (fn) { return fn(); } );
 };
 Store.prototype.host = function host ( target ) {
 	this._host = target;
@@ -212,12 +218,19 @@ Store.prototype.subscribe = function subscribe ( fn ) {
 
 	this._subscribers.push( fn );
 };
+Store.prototype.subscribeViewUpdate = function subscribeViewUpdate ( fn ) {
+	if ( typeof fn !== 'function' ) {
+		return;
+	}
+
+	this._viewUpdateSubscribers.push( fn );
+};
 Store.prototype.registerModule = function registerModule ( name, module ) {
 		if ( name === void 0 ) name = '';
 		if ( module === void 0 ) module = {};
 
 	if ( !name ) {
-		return console.error( 'Please provide name when register module' );
+		return console.error( 'Please provide a name when register module' );
 	}
 
 	// attach module state to root state

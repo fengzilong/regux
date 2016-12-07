@@ -10,6 +10,7 @@ class Store {
 			_actions: actions,
 			_plugins: plugins,
 			_subscribers: [],
+			_viewUpdateSubscribers: [],
 			_queue: [],
 			_updateTid: null,
 		} );
@@ -114,6 +115,7 @@ class Store {
 	}
 	updateView() {
 		this._host.$update();
+		this._viewUpdateSubscribers.forEach( fn => fn() );
 	}
 	host( target ) {
 		this._host = target;
@@ -125,9 +127,16 @@ class Store {
 
 		this._subscribers.push( fn );
 	}
+	subscribeViewUpdate( fn ) {
+		if ( typeof fn !== 'function' ) {
+			return;
+		}
+
+		this._viewUpdateSubscribers.push( fn );
+	}
 	registerModule( name = '', module = {} ) {
 		if ( !name ) {
-			return console.error( 'Please provide name when register module' );
+			return console.error( 'Please provide a name when register module' );
 		}
 
 		// attach module state to root state

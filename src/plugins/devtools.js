@@ -17,4 +17,8 @@ export default () => store => {
 	store.subscribe( ( action, state ) => {
 		devtools.emit( 'reo:reducer', action, state );
 	} );
+
+	store.subscribeViewUpdate( () => {
+		devtools.emit( 'reo:view-updated' );
+	} );
 };
