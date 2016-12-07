@@ -13,6 +13,11 @@ export default () => store => {
 	devtools.on( 'reo:travel-to-state', state => {
 		store.replaceState( state );
 	} );
+	devtools.on( 'reo:silent-travel-to-state', state => {
+		store.replaceState( state, {
+			silent: true
+		} );
+	} );
 
 	store.subscribe( ( action, state ) => {
 		devtools.emit( 'reo:reducer', action, state );

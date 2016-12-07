@@ -25,9 +25,12 @@ class Store {
 	use( plugin ) {
 		plugin( this );
 	}
-	replaceState( newState ) {
+	replaceState( newState, { silent = false } = {} ) {
 		this._state = newState;
-		this.updateView();
+
+		if ( !silent ) {
+			this.updateView();
+		}
 	}
 	getState() {
 		return this._state;

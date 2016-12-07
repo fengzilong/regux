@@ -71,6 +71,11 @@ var devtoolsPlugin = function () { return function (store) {
 	devtools.on( 'reo:travel-to-state', function (state) {
 		store.replaceState( state );
 	} );
+	devtools.on( 'reo:silent-travel-to-state', function (state) {
+		store.replaceState( state, {
+			silent: true
+		} );
+	} );
 
 	store.subscribe( function ( action, state ) {
 		devtools.emit( 'reo:reducer', action, state );
@@ -111,9 +116,15 @@ var Store = function Store( ref ) {
 Store.prototype.use = function use ( plugin ) {
 	plugin( this );
 };
-Store.prototype.replaceState = function replaceState ( newState ) {
+Store.prototype.replaceState = function replaceState ( newState, ref ) {
+		if ( ref === void 0 ) ref = {};
+		var silent = ref.silent; if ( silent === void 0 ) silent = false;
+
 	this._state = newState;
-	this.updateView();
+
+	if ( !silent ) {
+		this.updateView();
+	}
 };
 Store.prototype.getState = function getState () {
 	return this._state;
