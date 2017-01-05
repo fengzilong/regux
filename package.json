@@ -1,6 +1,6 @@
 {
   "name": "regux",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "redux-inspired application architecture for regular",
   "main": "dist/regux.js",
   "scripts": {
