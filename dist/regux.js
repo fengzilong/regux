@@ -66,7 +66,12 @@ Scheduler.prototype.add = function add ( task ) {
 Scheduler.prototype.run = function run ( main ) {
 		var this$1 = this;
 
-	setTimeout( main, 0 );
+	if ( this.t ) {
+		clearTimeout( this.t );
+	}
+
+	this.t = setTimeout( main, 0 );
+
 	this.tasks.forEach( function ( task, i ) {
 		if ( typeof task === 'function' ) {
 			task();

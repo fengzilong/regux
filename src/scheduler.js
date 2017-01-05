@@ -7,7 +7,12 @@ export default class Scheduler {
 		this.tasks.push( task );
 	}
 	run( main ) {
-		setTimeout( main, 0 );
+		if ( this.t ) {
+			clearTimeout( this.t );
+		}
+
+		this.t = setTimeout( main, 0 );
+
 		this.tasks.forEach( ( task, i ) => {
 			if ( typeof task === 'function' ) {
 				task();
