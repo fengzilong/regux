@@ -11,14 +11,16 @@ export default class Scheduler {
 			clearTimeout( this.t );
 		}
 
-		this.t = setTimeout( main, 0 );
+		this.t = setTimeout( () => {
+			main();
 
-		this.tasks.forEach( ( task, i ) => {
-			if ( typeof task === 'function' ) {
-				task();
-				this.tasks[ i ] = null;
-			}
-		} );
-		this.tasks.length = 0;
+			this.tasks.forEach( ( task, i ) => {
+				if ( typeof task === 'function' ) {
+					task();
+					this.tasks[ i ] = null;
+				}
+			} );
+			this.tasks.length = 0;
+		}, 0 );
 	}
 }

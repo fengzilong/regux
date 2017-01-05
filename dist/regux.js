@@ -70,15 +70,17 @@ Scheduler.prototype.run = function run ( main ) {
 		clearTimeout( this.t );
 	}
 
-	this.t = setTimeout( main, 0 );
+	this.t = setTimeout( function () {
+		main();
 
-	this.tasks.forEach( function ( task, i ) {
-		if ( typeof task === 'function' ) {
-			task();
-			this$1.tasks[ i ] = null;
-		}
-	} );
-	this.tasks.length = 0;
+		this$1.tasks.forEach( function ( task, i ) {
+			if ( typeof task === 'function' ) {
+				task();
+				this$1.tasks[ i ] = null;
+			}
+		} );
+		this$1.tasks.length = 0;
+	}, 0 );
 };
 
 // Credits: vue/vuex
