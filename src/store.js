@@ -1,3 +1,4 @@
+import Scheduler from './scheduler';
 import devtoolsPlugin from './plugins/devtools';
 
 class Store {
@@ -11,15 +12,16 @@ class Store {
 			_plugins: plugins,
 			_subscribers: [],
 			_viewUpdateSubscribers: [],
-			_queue: [],
-			_updateTid: null,
+			scheduler: new Scheduler(),
 		} );
 
+		// register modules
 		Object.keys( modules )
 			.forEach( name => this.registerModule( name, modules[ name ] ) );
 
-		// execute plugins
+		// execute devtools manually
 		devtoolsPlugin()( this );
+		// execute other plugins
 		plugins.forEach( plugin => this.use( plugin ) );
 	}
 	use( plugin ) {
@@ -29,7 +31,7 @@ class Store {
 		this._state = newState;
 
 		if ( !silent ) {
-			this.updateView();
+			this.syncView();
 		}
 	}
 	getState() {
@@ -38,23 +40,8 @@ class Store {
 	getGetters() {
 		return this._getters;
 	}
-	// watch( getter, cb, options ) {
-	//
-	// }
-	nextTick( ...args ) {
-		return this.queue.apply( this, args );
-	}
-	queue( fn ) {
-		this._queue.push( fn );
-	}
-	dequeue() {
-		const queue = this._queue;
-		queue.forEach( v => {
-			if ( typeof v === 'function' ) {
-				v();
-			}
-		} );
-		this._queue.length = 0;
+	nextTick( fn ) {
+		this.scheduler.add( fn );
 	}
 	dispatch( type, payload ) {
 		let action;
@@ -93,6 +80,7 @@ class Store {
 	commit( type, payload ) {
 		let mutation;
 
+		// e.g. mutation -> { type: 'foo', payload: 'bar' }
 		if ( typeof type === 'string' ) {
 			mutation = { type, payload };
 		} else if ( isValidMutation( type ) ) {
@@ -101,8 +89,6 @@ class Store {
 			return console.error( 'invalid commit params', arguments );
 		}
 
-		// mutation -> { type: 'foo', payload: 'bar' }
-
 		const reducer = this._reducers[ mutation.type ];
 		if ( typeof reducer === 'function' ) {
 			const state = this.getState();
@@ -110,23 +96,15 @@ class Store {
 
 			reducer( moduleState, mutation.payload );
 
-			// notify subscribers that state has been changed
+			// notify subscribers state has been changed
 			this._applySubscribers( mutation, state );
 
-			// try to update view
-			if ( this._updateTid ) {
-				clearTimeout( this._updateTid );
-			}
-
-			this._updateTid = setTimeout( () => {
-				this.updateView();
-				this.dequeue();
-			}, 0 );
+			this.scheduler.run( () => this.syncView() );
 		} else {
 			console.error( 'reducer', mutation.type, 'not found' );
 		}
 	}
-	updateView() {
+	syncView() {
 		this._host.$update();
 		this._viewUpdateSubscribers.forEach( fn => fn() );
 	}
@@ -159,7 +137,9 @@ class Store {
 		for ( let j in reducers ) {
 			reducers[ j ].key = name;
 		}
+
 		reducers = addNSForReducers( reducers, name );
+
 		// attach module reducers to root reducers
 		Object.assign( this._reducers, reducers );
 	}
