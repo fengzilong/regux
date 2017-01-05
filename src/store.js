@@ -74,7 +74,17 @@ class Store {
 		}
 
 		return act( {
+			getState: this.getState.bind( this ),
 			state: this.getState(),
+			get: key => {
+				const getters = this.getGetters();
+				const getterFn = getters[ key ];
+				if ( typeof getterFn !== 'function' ) {
+					return;
+				}
+
+				return getterFn( this.getState() );
+			},
 			commit: this.commit.bind( this ),
 			dispatch: this.dispatch.bind( this ),
 			nextTick: this.nextTick.bind( this ),

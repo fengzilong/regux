@@ -71,6 +71,8 @@
 			},
 			actions: {
 				add( context, num ) {
+					console.log( 'count', context.get( 'count' ) );
+
 					context.commit( 'app/ADD', 1 );
 					context.commit( 'foo/ADD2', num );
 					context.commit( 'foo/ADD2', num );
@@ -78,6 +80,8 @@
 					context.commit( 'foo/SUBTRACT2', num );
 					context.nextTick( function() {
 					} );
+
+					console.log( 'count', context.get( 'count' ) );
 				},
 			},
 			plugins: [ logger( { collapsed: true } ) ]

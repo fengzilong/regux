@@ -84,7 +84,7 @@ var devtoolsPlugin = function () { return function (store) {
 	store.subscribeViewUpdate( function () {
 		devtools.emit( 'reo:view-updated' );
 	} );
-}; }
+}; };
 
 var Store = function Store( ref ) {
 	var this$1 = this;
@@ -154,6 +154,8 @@ Store.prototype.dequeue = function dequeue () {
 	this._queue.length = 0;
 };
 Store.prototype.dispatch = function dispatch ( type, payload ) {
+		var this$1 = this;
+
 	var action;
 
 	if ( typeof type === 'string' ) {
@@ -171,7 +173,17 @@ Store.prototype.dispatch = function dispatch ( type, payload ) {
 	}
 
 	return act( {
+		getState: this.getState.bind( this ),
 		state: this.getState(),
+		get: function (key) {
+			var getters = this$1.getGetters();
+			var getterFn = getters[ key ];
+			if ( typeof getterFn !== 'function' ) {
+				return;
+			}
+
+			return getterFn( this$1.getState() );
+		},
 		commit: this.commit.bind( this ),
 		dispatch: this.dispatch.bind( this ),
 		nextTick: this.nextTick.bind( this ),
