@@ -26,7 +26,7 @@ const regux = Component => {
 				}
 
 				if ( !store ) {
-					return console.error( 'store not found' );
+					return console.warn( 'store not found' );
 				}
 
 				this.$store = store;
