@@ -1,7 +1,7 @@
 // Credits: vue/vuex
 
 export default () => store => {
-	const devtools = window.__REO_DEVTOOLS_HOOK__;
+	const devtools = window && window.__REO_DEVTOOLS_HOOK__;
 
 	if ( !devtools ) {
 		return;
