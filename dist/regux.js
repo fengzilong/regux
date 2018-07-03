@@ -86,7 +86,7 @@ Scheduler.prototype.run = function run ( main ) {
 // Credits: vue/vuex
 
 var devtoolsPlugin = function () { return function (store) {
-	var devtools = window.__REO_DEVTOOLS_HOOK__;
+	var devtools = window && window.__REO_DEVTOOLS_HOOK__;
 
 	if ( !devtools ) {
 		return;
@@ -330,7 +330,7 @@ var regux = function (Component) {
 				}
 
 				if ( !store ) {
-					return console.error( 'store not found' );
+					return console.warn( 'store not found' );
 				}
 
 				this.$store = store;

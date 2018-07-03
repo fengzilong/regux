@@ -32,6 +32,7 @@
   },
   "homepage": "https://github.com/fengzilong/regux#readme",
   "devDependencies": {
+    "bubleup": "^0.5.2",
     "eslint": "^3.11.1",
     "eslint-config-mo": "0.0.2"
   }
