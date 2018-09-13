@@ -12,17 +12,16 @@ const regux = Component => {
 				if ( isStore( this.store ) ) {
 					if ( store ) {
 						// store already exists
-						console.groupCollapsed( 'store already exists' );
-						console.log( 'old store:', store );
-						console.log( 'new store:', this.store );
-						console.groupEnd( 'store already exists' );
-						console.warn( 'old store will be used' );
-					} else {
-						// save store
-						store = this.store;
-						store.host( this );
-						delete this.store;
+						console.warn( 'store already exists' );
+						console.warn( 'old store:', store );
+						console.warn( 'new store:', this.store );
+						console.warn( 'new store will be used' );
 					}
+					
+					// save store
+					store = this.store;
+					store.host( this );
+					delete this.store;
 				}
 
 				if ( !store ) {
