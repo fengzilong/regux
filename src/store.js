@@ -105,14 +105,16 @@ class Store {
 		}
 	}
 	syncView() {
-		this._host.forEach( h => h.$update() );
+		// unref destroyed hosts
+		this._hosts = this._hosts.filter( h => h.$phase !== 'destroyed' );
+		this._hosts.forEach( h => h.$update() );
 		this._viewUpdateSubscribers.forEach( fn => fn() );
 	}
 	host( target ) {
-		if ( !this._host ) {
-			this._host = [];
+		if ( !this._hosts ) {
+			this._hosts = [];
 		}
-		this._host.push( target );
+		this._hosts.push( target );
 	}
 	subscribe( fn ) {
 		if ( typeof fn !== 'function' ) {

@@ -229,14 +229,16 @@ Store.prototype.commit = function commit ( type, payload ) {
 	}
 };
 Store.prototype.syncView = function syncView () {
-	this._host.forEach( function (h) { return h.$update(); } );
+	// unref destroyed hosts
+	this._hosts = this._hosts.filter( function (h) { return h.$phase !== 'destroyed'; } );
+	this._hosts.forEach( function (h) { return h.$update(); } );
 	this._viewUpdateSubscribers.forEach( function (fn) { return fn(); } );
 };
 Store.prototype.host = function host ( target ) {
-	if ( !this._host ) {
-		this._host = [];
+	if ( !this._hosts ) {
+		this._hosts = [];
 	}
-	this._host.push( target );
+	this._hosts.push( target );
 };
 Store.prototype.subscribe = function subscribe ( fn ) {
 	if ( typeof fn !== 'function' ) {
