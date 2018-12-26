@@ -105,11 +105,14 @@ class Store {
 		}
 	}
 	syncView() {
-		this._host.$update();
+		this._host.forEach( h => h.$update() );
 		this._viewUpdateSubscribers.forEach( fn => fn() );
 	}
 	host( target ) {
-		this._host = target;
+		if ( !this._host ) {
+			this._host = [];
+		}
+		this._host.push( target );
 	}
 	subscribe( fn ) {
 		if ( typeof fn !== 'function' ) {

@@ -229,11 +229,14 @@ Store.prototype.commit = function commit ( type, payload ) {
 	}
 };
 Store.prototype.syncView = function syncView () {
-	this._host.$update();
+	this._host.forEach( function (h) { return h.$update(); } );
 	this._viewUpdateSubscribers.forEach( function (fn) { return fn(); } );
 };
 Store.prototype.host = function host ( target ) {
-	this._host = target;
+	if ( !this._host ) {
+		this._host = [];
+	}
+	this._host.push( target );
 };
 Store.prototype.subscribe = function subscribe ( fn ) {
 	if ( typeof fn !== 'function' ) {
@@ -321,7 +324,7 @@ var regux = function (Component) {
 						console.warn( 'new store:', this.store );
 						console.warn( 'new store will be used' );
 					}
-					
+
 					// save store
 					store = this.store;
 					store.host( this );

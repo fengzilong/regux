@@ -17,7 +17,7 @@ const regux = Component => {
 						console.warn( 'new store:', this.store );
 						console.warn( 'new store will be used' );
 					}
-					
+
 					// save store
 					store = this.store;
 					store.host( this );
